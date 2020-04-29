@@ -1,13 +1,10 @@
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
-github.com/zhigui-projects/gmsm v1.2.2 h1:QRZBjXxULY1Ywjn4j7o9CbyvbmPOvbaJmWdJ5Pai5TU=
-github.com/zhigui-projects/gmsm v1.2.2/go.mod h1:dwbnTe37O6Z+C75aIKkvWmV4nE7DZGE0AMHquV8A+L4=
-github.com/zhigui-projects/x509 v0.0.0-20200116032500-a69e03e34965 h1:GcYGI/JcCYBVZ22UHZS4qjtAgtE1arNfCiH3rBiulPg=
-github.com/zhigui-projects/x509 v0.0.0-20200116032500-a69e03e34965/go.mod h1:D2SUwV9gDWlprffV4IQ2WGVwQ1y44RZAkEgnNHuz9GQ=
 gitlab.ziggurat.cn/guomi/gm-go v1.3.0 h1:oSIeI8rKPty6gBjdSBx4dZdanKNF/famt5VL1spvjIw=
 gitlab.ziggurat.cn/guomi/gm-go v1.3.0/go.mod h1:PAXX7olQ9t3K84Dlqf+nKegm1G65k63gKULbKYL3epY=
+gitlab.ziggurat.cn/guomi/gm-plugins v0.0.2 h1:TdGB4fq8dbC1cWnTTAgRDLymvRF6KbnfiJkKDEPZzf8=
+gitlab.ziggurat.cn/guomi/gm-plugins v0.0.2/go.mod h1:bKMl8gduZg6+IfmGQMjCTBFWViGQHECHwYWLDVybS/M=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
-golang.org/x/crypto v0.0.0-20191219195013-becbf705a915/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/crypto v0.0.0-20200427165652-729f1e841bcc h1:ZGI/fILM2+ueot/UixBSoj9188jCAxVHEZEGhqq67I4=
 golang.org/x/crypto v0.0.0-20200427165652-729f1e841bcc/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3/go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg=
