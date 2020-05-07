@@ -49,9 +49,13 @@ BpiCUyBKtfHYgRUURd7df/15NOU=
 -----END CERTIFICATE-----
 `
 
+func init() {
+	InitX509(SM2)
+}
+
 func TestParsePKIXPublicKey(t *testing.T) {
 	t.Run(SM2, func(t *testing.T) {
-		ctx := X509(SM2)
+		ctx := GetX509()
 		block, _ := pem.Decode([]byte(pemPublicKey))
 
 		pub, err := ctx.ParsePKIXPublicKey(block.Bytes)
@@ -166,13 +170,13 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 			},
 		}
 
-		derBytes, err := X509(SM2).CreateCertificate(rand.Reader, &template, &template, test.pub, test.priv)
+		derBytes, err := GetX509().CreateCertificate(rand.Reader, &template, &template, test.pub, test.priv)
 		if err != nil {
 			t.Errorf("%s: failed to create certificate: %s", test.name, err)
 			continue
 		}
 
-		cert, err := X509(SM2).ParseCertificate(derBytes)
+		cert, err := GetX509().ParseCertificate(derBytes)
 		if err != nil {
 			t.Errorf("%s: failed to parse certificate: %s", test.name, err)
 			continue
@@ -294,7 +298,7 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 		}
 
 		if test.checkSig {
-			err = X509(SM2).CheckCertSignatureFrom(cert, cert)
+			err = GetX509().CheckCertSignatureFrom(cert, cert)
 			if err != nil {
 				t.Errorf("%s: signature verification failed: %s", test.name, err)
 			}
@@ -306,7 +310,7 @@ func TestCRLCreation(t *testing.T) {
 	block, _ := pem.Decode([]byte(pemPrivateKey))
 	privSM2, _ := sm2Instance.parseECPrivateKey(block.Bytes)
 	block, _ = pem.Decode([]byte(pemCertificate))
-	certSM2, _ := X509(SM2).ParseCertificate(block.Bytes)
+	certSM2, _ := GetX509().ParseCertificate(block.Bytes)
 
 	tests := []struct {
 		name string
@@ -345,7 +349,7 @@ func TestCRLCreation(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		crlBytes, err := X509(SM2).CreateCRL(test.cert, rand.Reader, test.priv, revokedCerts, now, expiry)
+		crlBytes, err := GetX509().CreateCRL(test.cert, rand.Reader, test.priv, revokedCerts, now, expiry)
 		if err != nil {
 			t.Errorf("%s: error creating CRL: %s", test.name, err)
 		}
@@ -388,19 +392,19 @@ func TestCreateCertificateRequest(t *testing.T) {
 			IPAddresses:        []net.IP{net.IPv4(127, 0, 0, 1).To4(), net.ParseIP("2001:4860:0:2001::68")},
 		}
 
-		derBytes, err := X509(SM2).CreateCertificateRequest(random, &template, test.priv)
+		derBytes, err := GetX509().CreateCertificateRequest(random, &template, test.priv)
 		if err != nil {
 			t.Errorf("%s: failed to create certificate request: %s", test.name, err)
 			continue
 		}
 
-		out, err := X509(SM2).ParseCertificateRequest(derBytes)
+		out, err := GetX509().ParseCertificateRequest(derBytes)
 		if err != nil {
 			t.Errorf("%s: failed to create certificate request: %s", test.name, err)
 			continue
 		}
 
-		err = X509(SM2).CheckCertificateRequestSignature(out)
+		err = GetX509().CheckCertificateRequestSignature(out)
 		if err != nil {
 			t.Errorf("%s: failed to check certificate request signature: %s", test.name, err)
 			continue
@@ -421,7 +425,7 @@ func TestCreateCertificateRequest(t *testing.T) {
 }
 
 func TestSm2X509(t *testing.T) {
-	certMgr := NewCertificateMgr(X509(SM2))
+	certMgr := NewCertificateMgr(GetX509())
 
 	priv, err := SmCrypto.GenPrivateKey() // 生成密钥对
 	if err != nil {
@@ -501,7 +505,7 @@ func TestSm2X509(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = X509(SM2).CheckCertificateRequestSignature(req)
+	err = GetX509().CheckCertificateRequestSignature(req)
 	if err != nil {
 		log.Fatalf("Request CheckSignature error:%v", err)
 	} else {
@@ -582,7 +586,7 @@ func TestSm2X509(t *testing.T) {
 	if err != nil {
 		log.Fatalf("failed to read cert file")
 	}
-	err = X509(SM2).CheckCertSignature(cert, cert.SignatureAlgorithm, cert.RawTBSCertificate, cert.Signature)
+	err = GetX509().CheckCertSignature(cert, cert.SignatureAlgorithm, cert.RawTBSCertificate, cert.Signature)
 	if err != nil {
 		log.Fatal(err)
 	} else {

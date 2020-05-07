@@ -90,9 +90,11 @@ func X509KeyPair(certPEMBlock, keyPEMBlock []byte) (tls.Certificate, error) {
 	// to check that it looks sane and matches the private key.
 	var x509Ctx cx.Context
 	if strings.HasPrefix(keyDERBlock.Type, cx.SM2) {
-		x509Ctx = cx.X509(cx.SM2)
+		// TODO
+		x509Ctx = cx.GetX509()
 	} else {
-		x509Ctx = cx.X509("")
+		// TODO
+		x509Ctx = cx.GetX509()
 	}
 	x509Cert, err := x509Ctx.ParseCertificate(cert.Certificate[0])
 	if err != nil {

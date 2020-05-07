@@ -74,15 +74,20 @@ type AlgoCapacity interface {
 	parseECPrivateKey(der []byte) (*ecdsa.PrivateKey, error)
 }
 
-var (
-	SM2 = "SM2"
-)
+var X509Instance Context
 
-func X509(algo string) Context {
+func InitX509(algo string) {
 	switch algo {
 	case SM2:
-		return GetX509SM2()
+		X509Instance = GetX509SM2()
 	default:
-		return GetX509Std()
+		X509Instance = GetX509Std()
 	}
+}
+
+func GetX509() Context {
+	if X509Instance == nil {
+		InitX509("")
+	}
+	return X509Instance
 }

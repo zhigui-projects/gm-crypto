@@ -52,9 +52,8 @@ const (
 	SM2WithSHA256
 )
 
-const (
-	SM3 Hash = 100
-)
+const SM2 = "SM2"
+const SM3 Hash = 100
 
 var signatureAlgorithmDetails = []struct {
 	algo       x.SignatureAlgorithm
