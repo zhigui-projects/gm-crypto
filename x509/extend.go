@@ -231,11 +231,13 @@ func CreateCertificateRequest(rand io.Reader, template *x.CertificateRequest, pr
 	}
 
 	var signature []byte
-	pri, err := utils.CheckSm2PrivateKey(key)
+	var pri *primitive.Sm2PrivateKey
+	pri, err = utils.CheckSm2PrivateKey(key)
 	if err != nil {
-		return nil, err
+		signature, err = key.Sign(rand, signed, hashFunc)
+	} else {
+		signature, err = SmCrypto.Sign(pri, signed, hashFunc)
 	}
-	signature, err = SmCrypto.Sign(pri, signed, hashFunc)
 	if err != nil {
 		return
 	}
@@ -346,11 +348,13 @@ func CreateCertificate(rand io.Reader, template, parent *x.Certificate, pub, pri
 	}
 
 	var signature []byte
-	pri, err := utils.CheckSm2PrivateKey(key)
+	var pri *primitive.Sm2PrivateKey
+	pri, err = utils.CheckSm2PrivateKey(key)
 	if err != nil {
-		return nil, err
+		signature, err = key.Sign(rand, signed, signerOpts)
+	} else {
+		signature, err = SmCrypto.Sign(pri, signed, signerOpts)
 	}
-	signature, err = SmCrypto.Sign(pri, signed, signerOpts)
 	if err != nil {
 		return
 	}
