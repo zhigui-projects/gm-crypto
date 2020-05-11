@@ -251,6 +251,13 @@ func CreateCertificateRequest(rand io.Reader, template *x.CertificateRequest, pr
 		},
 	})
 }
+func CheckCRLSignature( cert *x.Certificate, crl *pkix.CertificateList, algoCap AlgoCapacity) error {
+	algo := getSignatureAlgorithmFromAI(crl.SignatureAlgorithm)
+	return algoCap.checkSignature(algo, crl.TBSCertList.Raw, crl.SignatureValue.RightAlign(), cert.PublicKey)
+
+	//return X509(SM2).CheckCertSignature(c, algo, crl.TBSCertList.Raw, crl.SignatureValue.RightAlign())
+	//return c.CheckSignature(algo, crl.TBSCertList.Raw, crl.SignatureValue.RightAlign())
+}
 
 func ParseCertificateRequest(asn1Data []byte, algoCap AlgoCapacity) (*x.CertificateRequest, error) {
 	var csr certificateRequest

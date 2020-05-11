@@ -110,6 +110,13 @@ func (s *x509SM2) CreateCRL(cert *x.Certificate, rand io.Reader, priv interface{
 	return CreateCRL(cert, rand, priv, revokedCerts, now, expiry, s)
 }
 
+func (s *x509SM2) Verify(c *x.Certificate, opts x.VerifyOptions) (chains [][]*x.Certificate, err error){
+	return Verify(c, opts)
+}
+func (s *x509SM2) CheckCRLSignature( cert *x.Certificate, crl *pkix.CertificateList) error{
+	return CheckCRLSignature(cert, crl ,s)
+}
+
 func (s *x509SM2) parsePublicKey(keyData *publicKeyInfo) (interface{}, error) {
 	asn1Data := keyData.PublicKey.RightAlign()
 	paramsData := keyData.Algorithm.Parameters.FullBytes

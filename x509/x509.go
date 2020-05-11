@@ -50,7 +50,15 @@ type Context interface {
 	// CheckCertSignatureFrom verifies that the signature on cert is a valid signature
 	// from parent.
 	CheckCertSignatureFrom(cert *x.Certificate, parent *x.Certificate) error
+	// Verify attempts to verify c by building one or more chains from c to a
+	// certificate in opts.Roots, using certificates in opts.Intermediates if
+	// needed. If successful, it returns one or more chains where the first
+	// element of the chain is c and the last element is from opts.Roots.
 
+	// WARNING: this function doesn't do any revocation checking.
+	Verify(c *x.Certificate, opts x.VerifyOptions) (chains [][]*x.Certificate, err error)
+
+	CheckCRLSignature( cert *x.Certificate, crl *pkix.CertificateList) error
 	// CreateCRL returns a DER encoded CRL, signed by this Certificate, that
 	// contains the given list of revoked certificates.
 	CreateCRL(cert *x.Certificate, rand io.Reader, priv interface{}, revokedCerts []pkix.RevokedCertificate, now, expiry time.Time) (crlBytes []byte, err error)
