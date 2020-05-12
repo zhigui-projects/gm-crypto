@@ -58,7 +58,8 @@ type Context interface {
 	// WARNING: this function doesn't do any revocation checking.
 	Verify(c *x.Certificate, opts x.VerifyOptions) (chains [][]*x.Certificate, err error)
 
-	CheckCRLSignature( cert *x.Certificate, crl *pkix.CertificateList) error
+	CheckCRLSignature(cert *x.Certificate, crl *pkix.CertificateList) error
+
 	// CreateCRL returns a DER encoded CRL, signed by this Certificate, that
 	// contains the given list of revoked certificates.
 	CreateCRL(cert *x.Certificate, rand io.Reader, priv interface{}, revokedCerts []pkix.RevokedCertificate, now, expiry time.Time) (crlBytes []byte, err error)

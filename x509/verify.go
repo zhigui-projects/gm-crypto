@@ -484,7 +484,7 @@ func matchDomainConstraint(domain, constraint string) (bool, error) {
 // form of name, suitable for passing to the match function. The total number
 // of comparisons is tracked in the given count and should not exceed the given
 // limit.
-func checkNameConstraints(c *x.Certificate,count *int,
+func checkNameConstraints(c *x.Certificate, count *int,
 	maxConstraintComparisons int,
 	nameType string,
 	name string,
@@ -541,7 +541,7 @@ func checkNameConstraints(c *x.Certificate,count *int,
 
 // isValid performs validity checks on c given that it is a candidate to append
 // to the chain in currentChain.
-func isValid(c *x.Certificate,certType int, currentChain []*x.Certificate, opts *x.VerifyOptions) error {
+func isValid(c *x.Certificate, certType int, currentChain []*x.Certificate, opts *x.VerifyOptions) error {
 	if len(c.UnhandledCriticalExtensions) > 0 {
 		return x.UnhandledCriticalExtension{}
 	}
@@ -606,7 +606,7 @@ func isValid(c *x.Certificate,certType int, currentChain []*x.Certificate, opts 
 					return fmt.Errorf("x509: cannot parse dnsName %q", name)
 				}
 
-				if err := checkNameConstraints(c,&comparisonCount, maxConstraintComparisons, "DNS name", name, name,
+				if err := checkNameConstraints(c, &comparisonCount, maxConstraintComparisons, "DNS name", name, name,
 					func(parsedName, constraint interface{}) (bool, error) {
 						return matchDomainConstraint(parsedName.(string), constraint.(string))
 					}, c.PermittedDNSDomains, c.ExcludedDNSDomains); err != nil {
@@ -709,10 +709,8 @@ func Verify(c *x.Certificate, opts x.VerifyOptions) (chains [][]*x.Certificate, 
 		return nil, errNotParsed
 	}
 	if opts.Intermediates != nil {
-
-		certs := getCertPoolcerts(opts.Intermediates)
-		//for _, intermediate := range opts.Intermediates.certs {
-		for _, intermediate := range certs {
+		certPool := CopyFrom(opts.Intermediates)
+		for _, intermediate := range certPool.certs {
 			if len(intermediate.Raw) == 0 {
 				return nil, errNotParsed
 			}
@@ -721,17 +719,21 @@ func Verify(c *x.Certificate, opts x.VerifyOptions) (chains [][]*x.Certificate, 
 
 	// Use Windows's own verification and chain building.
 	if opts.Roots == nil && runtime.GOOS == "windows" {
-		return systemVerify(c, &opts)
+		return nil, errors.New("crypto/x509: system root pool is not available on Windows")
 	}
 
 	if opts.Roots == nil {
-		opts.Roots = systemRootsPool()
+		var err error
+		opts.Roots, err = x.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
 		if opts.Roots == nil {
-			return nil, SystemRootsError{systemRootsErr}
+			return nil, errors.New(fmt.Sprintf("x509: failed to load system roots and no roots provided; %v", err))
 		}
 	}
 
-	err = isValid(c,leafCertificate, nil, &opts)
+	err = isValid(c, leafCertificate, nil, &opts)
 	if err != nil {
 		return
 	}
@@ -744,10 +746,11 @@ func Verify(c *x.Certificate, opts x.VerifyOptions) (chains [][]*x.Certificate, 
 	}
 
 	var candidateChains [][]*x.Certificate
-	if contains(opts.Roots,c) {
+	roots := CopyFrom(opts.Roots)
+	if roots.contains(c) {
 		candidateChains = append(candidateChains, []*x.Certificate{c})
 	} else {
-		if candidateChains, err = buildChains(c,nil, []*x.Certificate{c}, nil, &opts); err != nil {
+		if candidateChains, err = buildChains(c, nil, []*x.Certificate{c}, nil, &opts); err != nil {
 			return nil, err
 		}
 	}
@@ -790,7 +793,7 @@ func appendToFreshChain(chain []*x.Certificate, cert *x.Certificate) []*x.Certif
 // for failed checks due to different intermediates having the same Subject.
 const maxChainSignatureChecks = 100
 
-func buildChains(c *x.Certificate,cache map[*x.Certificate][][]*x.Certificate, currentChain []*x.Certificate, sigChecks *int, opts *x.VerifyOptions) (chains [][]*x.Certificate, err error) {
+func buildChains(c *x.Certificate, cache map[*x.Certificate][][]*x.Certificate, currentChain []*x.Certificate, sigChecks *int, opts *x.VerifyOptions) (chains [][]*x.Certificate, err error) {
 	var (
 		hintErr  error
 		hintCert *x.Certificate
@@ -812,7 +815,7 @@ func buildChains(c *x.Certificate,cache map[*x.Certificate][][]*x.Certificate, c
 			return
 		}
 
-		if err :=GetX509SM2().CheckCertSignatureFrom( c, candidate); err != nil {
+		if err := GetX509SM2().CheckCertSignatureFrom(c, candidate); err != nil {
 			if hintErr == nil {
 				hintErr = err
 				hintCert = candidate
@@ -820,7 +823,7 @@ func buildChains(c *x.Certificate,cache map[*x.Certificate][][]*x.Certificate, c
 			return
 		}
 
-		err = isValid(candidate,certType, currentChain, opts)
+		err = isValid(candidate, certType, currentChain, opts)
 		if err != nil {
 			return
 		}
@@ -834,20 +837,20 @@ func buildChains(c *x.Certificate,cache map[*x.Certificate][][]*x.Certificate, c
 			}
 			childChains, ok := cache[candidate]
 			if !ok {
-				childChains, err = buildChains(candidate,cache, appendToFreshChain(currentChain, candidate), sigChecks, opts)
+				childChains, err = buildChains(candidate, cache, appendToFreshChain(currentChain, candidate), sigChecks, opts)
 				cache[candidate] = childChains
 			}
 			chains = append(chains, childChains...)
 		}
 	}
 
-	for _, rootNum := range findPotentialParents(opts.Roots,c) {
-		certs := getCertPoolcerts(opts.Roots)
-		considerCandidate(rootCertificate, certs[rootNum])
+	roots := CopyFrom(opts.Roots)
+	for _, rootNum := range roots.findPotentialParents(c) {
+		considerCandidate(rootCertificate, roots.certs[rootNum])
 	}
-	for _, intermediateNum := range findPotentialParents(opts.Intermediates, c) {
-		certs := getCertPoolcerts(opts.Intermediates)
-		considerCandidate(intermediateCertificate, certs[intermediateNum])
+	intermediates := CopyFrom(opts.Intermediates)
+	for _, intermediateNum := range intermediates.findPotentialParents(c) {
+		considerCandidate(intermediateCertificate, intermediates.certs[intermediateNum])
 	}
 
 	if len(chains) > 0 {
@@ -914,7 +917,7 @@ func validHostname(host string) bool {
 // certificates without SANs can still be validated against CAs with name
 // constraints if there is no risk the CN would be matched as a hostname.
 // See NameConstraintsWithoutSANs and issue 24151.
-func commonNameAsHostname(c *x.Certificate ) bool {
+func commonNameAsHostname(c *x.Certificate) bool {
 	return !ignoreCN && !hasSANExtension(c) && validHostname(c.Subject.CommonName)
 }
 
@@ -979,7 +982,7 @@ func toLowerCaseASCII(in string) string {
 
 // VerifyHostname returns nil if c is a valid certificate for the named host.
 // Otherwise it returns an error describing the mismatch.
-func VerifyHostname(c *x.Certificate,h string) error {
+func VerifyHostname(c *x.Certificate, h string) error {
 	// IP addresses may be written in [ ].
 	candidateIP := h
 	if len(h) >= 3 && h[0] == '[' && h[len(h)-1] == ']' {
@@ -1075,19 +1078,15 @@ NextCert:
 	return true
 }
 
-func  hasSANExtension(c *x.Certificate) bool {
+func hasSANExtension(c *x.Certificate) bool {
 	return oidInExtensions(oidExtensionSubjectAltName, c.Extensions)
 }
 
-
-func  hasNameConstraints(c *x.Certificate) bool {
+func hasNameConstraints(c *x.Certificate) bool {
 	return oidInExtensions(oidExtensionNameConstraints, c.Extensions)
 }
 
-
-
-
-func  getSANExtension(c *x.Certificate) []byte {
+func getSANExtension(c *x.Certificate) []byte {
 	for _, e := range c.Extensions {
 		if e.Id.Equal(oidExtensionSubjectAltName) {
 			return e.Value

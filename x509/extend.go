@@ -251,7 +251,8 @@ func CreateCertificateRequest(rand io.Reader, template *x.CertificateRequest, pr
 		},
 	})
 }
-func CheckCRLSignature( cert *x.Certificate, crl *pkix.CertificateList, algoCap AlgoCapacity) error {
+
+func CheckCRLSignature(cert *x.Certificate, crl *pkix.CertificateList, algoCap AlgoCapacity) error {
 	algo := getSignatureAlgorithmFromAI(crl.SignatureAlgorithm)
 	return algoCap.checkSignature(algo, crl.TBSCertList.Raw, crl.SignatureValue.RightAlign(), cert.PublicKey)
 

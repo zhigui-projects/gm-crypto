@@ -66,9 +66,11 @@ func (s *x509Std) CheckCertSignatureFrom(cert *x.Certificate, parent *x.Certific
 func (s *x509Std) CreateCRL(cert *x.Certificate, rand io.Reader, priv interface{}, revokedCerts []pkix.RevokedCertificate, now, expiry time.Time) (crlBytes []byte, err error) {
 	return cert.CreateCRL(rand, priv, revokedCerts, now, expiry)
 }
-func (s *x509Std) Verify(cert *x.Certificate, opts x.VerifyOptions) (chains [][]*x.Certificate, err error){
+
+func (s *x509Std) Verify(cert *x.Certificate, opts x.VerifyOptions) (chains [][]*x.Certificate, err error) {
 	return cert.Verify(opts)
 }
-func (s *x509Std) CheckCRLSignature( cert *x.Certificate, crl *pkix.CertificateList) error{
+
+func (s *x509Std) CheckCRLSignature(cert *x.Certificate, crl *pkix.CertificateList) error {
 	return cert.CheckCRLSignature(crl)
 }
