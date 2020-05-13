@@ -55,19 +55,19 @@ func (c *Conn) clientHandshake() error {
 	c.didResume = false
 
 	if len(c.config.ServerName) == 0 && !c.config.InsecureSkipVerify {
-		return errors.New("tls: either ServerName or InsecureSkipVerify must be specified in the tls.Config")
+		return errors.New("gm tls: either ServerName or InsecureSkipVerify must be specified in the tls.Config")
 	}
 
 	nextProtosLength := 0
 	for _, proto := range c.config.NextProtos {
 		if l := len(proto); l == 0 || l > 255 {
-			return errors.New("tls: invalid NextProtos value")
+			return errors.New("gm tls: invalid NextProtos value")
 		} else {
 			nextProtosLength += 1 + l
 		}
 	}
 	if nextProtosLength > 0xffff {
-		return errors.New("tls: NextProtos values too large")
+		return errors.New("gm tls: NextProtos values too large")
 	}
 
 	hello := &clientHelloMsg{
@@ -110,7 +110,7 @@ NextCipherSuite:
 	_, err := io.ReadFull(c.config.rand(), hello.random)
 	if err != nil {
 		c.sendAlert(alertInternalError)
-		return errors.New("tls: short read from Rand: " + err.Error())
+		return errors.New("gm tls: short read from Rand: " + err.Error())
 	}
 
 	if hello.vers >= VersionTLS12 {
@@ -163,7 +163,7 @@ NextCipherSuite:
 		hello.sessionId = make([]byte, 16)
 		if _, err := io.ReadFull(c.config.rand(), hello.sessionId); err != nil {
 			c.sendAlert(alertInternalError)
-			return errors.New("tls: short read from Rand: " + err.Error())
+			return errors.New("gm tls: short read from Rand: " + err.Error())
 		}
 	}
 
@@ -185,7 +185,7 @@ NextCipherSuite:
 	if !ok || vers < VersionTLS10 {
 		// TLS 1.0 is the minimum version supported as a client.
 		c.sendAlert(alertProtocolVersion)
-		return fmt.Errorf("tls: server selected unsupported protocol version %x", serverHello.vers)
+		return fmt.Errorf("gm tls: server selected unsupported protocol version %x", serverHello.vers)
 	}
 	c.vers = vers
 	c.haveVers = true
@@ -193,7 +193,7 @@ NextCipherSuite:
 	suite := mutualCipherSuite(hello.cipherSuites, serverHello.cipherSuite)
 	if suite == nil {
 		c.sendAlert(alertHandshakeFailure)
-		return errors.New("tls: server chose an unconfigured cipher suite")
+		return errors.New("gm tls: server chose an unconfigured cipher suite")
 	}
 
 	hs := &clientHandshakeState{
@@ -293,7 +293,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 			cert, err := gcx.GetX509SM2().ParseCertificate(asn1Data)
 			if err != nil {
 				c.sendAlert(alertBadCertificate)
-				return errors.New("tls: failed to parse certificate from server: " + err.Error())
+				return errors.New("gm tls: failed to parse certificate from server: " + err.Error())
 			}
 			certs[i] = cert
 		}
@@ -331,7 +331,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 			break
 		default:
 			c.sendAlert(alertUnsupportedCertificate)
-			return fmt.Errorf("tls: server's certificate contains an unsupported type of public key: %T", certs[0].PublicKey)
+			return fmt.Errorf("gm tls: server's certificate contains an unsupported type of public key: %T", certs[0].PublicKey)
 		}
 
 		c.peerCertificates = certs
@@ -344,7 +344,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		// motivation behind this requirement.
 		if !bytes.Equal(c.peerCertificates[0].Raw, certMsg.certificates[0]) {
 			c.sendAlert(alertBadCertificate)
-			return errors.New("tls: server's identity changed during renegotiation")
+			return errors.New("gm tls: server's identity changed during renegotiation")
 		}
 	}
 
@@ -444,7 +444,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		key, ok := chainToSend.PrivateKey.(crypto.Signer)
 		if !ok {
 			c.sendAlert(alertInternalError)
-			return fmt.Errorf("tls: client certificate private key of type %T does not implement crypto.Signer", chainToSend.PrivateKey)
+			return fmt.Errorf("gm tls: client certificate private key of type %T does not implement crypto.Signer", chainToSend.PrivateKey)
 		}
 
 		var signatureType uint8
@@ -455,7 +455,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 			signatureType = signatureRSA
 		default:
 			c.sendAlert(alertInternalError)
-			return fmt.Errorf("tls: failed to sign handshake with client certificate: unknown client certificate key type: %T", key)
+			return fmt.Errorf("gm tls: failed to sign handshake with client certificate: unknown client certificate key type: %T", key)
 		}
 
 		certVerify.signatureAndHash, err = hs.finishedHash.selectClientCertSignatureAlgorithm(certReq.signatureAndHashes, signatureType)
@@ -489,7 +489,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 	hs.masterSecret = masterFromPreMasterSecret(c.vers, hs.suite, preMasterSecret, hs.hello.random, hs.serverHello.random)
 	if err := c.config.writeKeyLog(hs.hello.random, hs.masterSecret); err != nil {
 		c.sendAlert(alertInternalError)
-		return errors.New("tls: failed to write to key log: " + err.Error())
+		return errors.New("gm tls: failed to write to key log: " + err.Error())
 	}
 
 	hs.finishedHash.discardHandshakeBuffer()
@@ -531,14 +531,14 @@ func (hs *clientHandshakeState) processServerHello() (bool, error) {
 
 	if hs.serverHello.compressionMethod != compressionNone {
 		c.sendAlert(alertUnexpectedMessage)
-		return false, errors.New("tls: server selected unsupported compression format")
+		return false, errors.New("gm tls: server selected unsupported compression format")
 	}
 
 	if c.handshakes == 0 && hs.serverHello.secureRenegotiationSupported {
 		c.secureRenegotiation = true
 		if len(hs.serverHello.secureRenegotiation) != 0 {
 			c.sendAlert(alertHandshakeFailure)
-			return false, errors.New("tls: initial handshake had non-empty renegotiation extension")
+			return false, errors.New("gm tls: initial handshake had non-empty renegotiation extension")
 		}
 	}
 
@@ -548,7 +548,7 @@ func (hs *clientHandshakeState) processServerHello() (bool, error) {
 		copy(expectedSecureRenegotiation[12:], c.serverFinished[:])
 		if !bytes.Equal(hs.serverHello.secureRenegotiation, expectedSecureRenegotiation[:]) {
 			c.sendAlert(alertHandshakeFailure)
-			return false, errors.New("tls: incorrect renegotiation extension contents")
+			return false, errors.New("gm tls: incorrect renegotiation extension contents")
 		}
 	}
 
@@ -559,17 +559,17 @@ func (hs *clientHandshakeState) processServerHello() (bool, error) {
 
 	if !clientDidNPN && serverHasNPN {
 		c.sendAlert(alertHandshakeFailure)
-		return false, errors.New("tls: server advertised unrequested NPN extension")
+		return false, errors.New("gm tls: server advertised unrequested NPN extension")
 	}
 
 	if !clientDidALPN && serverHasALPN {
 		c.sendAlert(alertHandshakeFailure)
-		return false, errors.New("tls: server advertised unrequested ALPN extension")
+		return false, errors.New("gm tls: server advertised unrequested ALPN extension")
 	}
 
 	if serverHasNPN && serverHasALPN {
 		c.sendAlert(alertHandshakeFailure)
-		return false, errors.New("tls: server advertised both NPN and ALPN extensions")
+		return false, errors.New("gm tls: server advertised both NPN and ALPN extensions")
 	}
 
 	if serverHasALPN {
@@ -584,12 +584,12 @@ func (hs *clientHandshakeState) processServerHello() (bool, error) {
 
 	if hs.session.vers != c.vers {
 		c.sendAlert(alertHandshakeFailure)
-		return false, errors.New("tls: server resumed a session with a different version")
+		return false, errors.New("gm tls: server resumed a session with a different version")
 	}
 
 	if hs.session.cipherSuite != hs.suite.id {
 		c.sendAlert(alertHandshakeFailure)
-		return false, errors.New("tls: server resumed a session with a different cipher suite")
+		return false, errors.New("gm tls: server resumed a session with a different cipher suite")
 	}
 
 	// Restore masterSecret and peerCerts from previous state
@@ -621,7 +621,7 @@ func (hs *clientHandshakeState) readFinished(out []byte) error {
 	if len(verify) != len(serverFinished.verifyData) ||
 		subtle.ConstantTimeCompare(verify, serverFinished.verifyData) != 1 {
 		c.sendAlert(alertHandshakeFailure)
-		return errors.New("tls: server's Finished message was incorrect")
+		return errors.New("gm tls: server's Finished message was incorrect")
 	}
 	hs.finishedHash.Write(serverFinished.marshal())
 	copy(out, verify)
@@ -768,7 +768,7 @@ findCert:
 				var err error
 				if x509Cert, err = gcx.GetX509SM2().ParseCertificate(cert); err != nil {
 					c.sendAlert(alertInternalError)
-					return nil, errors.New("tls: failed to parse client certificate #" + strconv.Itoa(i) + ": " + err.Error())
+					return nil, errors.New("gm tls: failed to parse client certificate #" + strconv.Itoa(i) + ": " + err.Error())
 				}
 			}
 

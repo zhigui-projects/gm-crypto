@@ -65,6 +65,6 @@ func TestLoadX509KeyPair(t *testing.T) {
 	cfg := &s.Config{Certificates: []s.Certificate{cert}}
 	_, err = s.Listen("tcp", ":2000", cfg)
 	if err != nil {
-		t.Errorf("Failed listen port use tls: %v", err)
+		t.Errorf("Failed listen port use gm tls: %v", err)
 	}
 }

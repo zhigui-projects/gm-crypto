@@ -652,7 +652,7 @@ func (c *Config) ticketKeys() []ticketKey {
 // if keys is empty.
 func (c *Config) SetSessionTicketKeys(keys [][32]byte) {
 	if len(keys) == 0 {
-		panic("tls: keys must have at least one key")
+		panic("gm tls: keys must have at least one key")
 	}
 
 	newKeys := make([]ticketKey, len(keys))
@@ -739,7 +739,7 @@ func (c *Config) getCertificate(clientHello *ClientHelloInfo) (*s.Certificate, e
 	}
 
 	if len(c.Certificates) == 0 {
-		return nil, errors.New("tls: no certificates configured")
+		return nil, errors.New("gm tls: no certificates configured")
 	}
 
 	if len(c.Certificates) == 1 || c.NameToCertificate == nil {
@@ -966,7 +966,7 @@ NextCipherSuite:
 }
 
 func unexpectedMessageError(wanted, got interface{}) error {
-	return fmt.Errorf("tls: received unexpected handshake message of type %T when waiting for %T", got, wanted)
+	return fmt.Errorf("gm tls: received unexpected handshake message of type %T when waiting for %T", got, wanted)
 }
 
 func isSupportedSignatureAndHash(sigHash signatureAndHash, sigHashes []signatureAndHash) bool {

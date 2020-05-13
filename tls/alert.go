@@ -84,9 +84,9 @@ var alertText = map[alert]string{
 func (e alert) String() string {
 	s, ok := alertText[e]
 	if ok {
-		return "tls: " + s
+		return "gm tls: " + s
 	}
-	return "tls: alert(" + strconv.Itoa(int(e)) + ")"
+	return "gm tls: alert(" + strconv.Itoa(int(e)) + ")"
 }
 
 func (e alert) Error() string {

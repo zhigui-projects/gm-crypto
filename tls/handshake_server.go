@@ -156,7 +156,7 @@ func (hs *serverHandshakeState) readClientHello() (isResume bool, err error) {
 	c.vers, ok = c.config.mutualVersion(hs.clientHello.vers)
 	if !ok {
 		c.sendAlert(alertProtocolVersion)
-		return false, fmt.Errorf("tls: client offered an unsupported, maximum protocol version of %x", hs.clientHello.vers)
+		return false, fmt.Errorf("gm tls: client offered an unsupported, maximum protocol version of %x", hs.clientHello.vers)
 	}
 	c.haveVers = true
 
@@ -194,7 +194,7 @@ Curves:
 
 	if !foundCompression {
 		c.sendAlert(alertHandshakeFailure)
-		return false, errors.New("tls: client does not support uncompressed connections")
+		return false, errors.New("gm tls: client does not support uncompressed connections")
 	}
 
 	hs.hello.vers = c.vers
@@ -207,7 +207,7 @@ Curves:
 
 	if len(hs.clientHello.secureRenegotiation) != 0 {
 		c.sendAlert(alertHandshakeFailure)
-		return false, errors.New("tls: initial handshake had non-empty renegotiation extension")
+		return false, errors.New("gm tls: initial handshake had non-empty renegotiation extension")
 	}
 
 	hs.hello.secureRenegotiationSupported = hs.clientHello.secureRenegotiationSupported
@@ -251,7 +251,7 @@ Curves:
 			hs.ecdsaOk = true
 		default:
 			c.sendAlert(alertInternalError)
-			return false, fmt.Errorf("tls: unsupported signing key type (%T)", priv.Public())
+			return false, fmt.Errorf("gm tls: unsupported signing key type (%T)", priv.Public())
 		}
 	}
 	if priv, ok := hs.cert.PrivateKey.(crypto.Decrypter); ok {
@@ -260,7 +260,7 @@ Curves:
 			hs.rsaDecryptOk = true
 		default:
 			c.sendAlert(alertInternalError)
-			return false, fmt.Errorf("tls: unsupported decryption key type (%T)", priv.Public())
+			return false, fmt.Errorf("gm tls: unsupported decryption key type (%T)", priv.Public())
 		}
 	}
 
@@ -285,7 +285,7 @@ Curves:
 
 	if hs.suite == nil {
 		c.sendAlert(alertHandshakeFailure)
-		return false, errors.New("tls: no cipher suite supported by both client and server")
+		return false, errors.New("gm tls: no cipher suite supported by both client and server")
 	}
 
 	// See https://tools.ietf.org/html/rfc7507.
@@ -294,7 +294,7 @@ Curves:
 			// The client is doing a fallback connection.
 			if hs.clientHello.vers < c.config.maxVersion() {
 				c.sendAlert(alertInappropriateFallback)
-				return false, errors.New("tls: client using inappropriate protocol fallback")
+				return false, errors.New("gm tls: client using inappropriate protocol fallback")
 			}
 			break
 		}
@@ -488,7 +488,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 			switch c.config.ClientAuth {
 			case RequireAnyClientCert, RequireAndVerifyClientCert:
 				c.sendAlert(alertBadCertificate)
-				return errors.New("tls: client didn's provide a certificate")
+				return errors.New("gm tls: client didn's provide a certificate")
 			}
 		}
 
@@ -544,7 +544,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 		if certVerify.hasSignatureAndHash {
 			signatureAndHash = certVerify.signatureAndHash
 			if !isSupportedSignatureAndHash(signatureAndHash, supportedSignatureAlgorithms) {
-				return errors.New("tls: unsupported hash function for client certificate")
+				return errors.New("gm tls: unsupported hash function for client certificate")
 			}
 		} else {
 			// Before TLS 1.2 the signature algorithm was implicit
@@ -561,7 +561,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 		switch key := pub.(type) {
 		case *ecdsa.PublicKey:
 			if signatureAndHash.signature != signatureECDSA {
-				err = errors.New("tls: bad signature type for client's ECDSA certificate")
+				err = errors.New("gm tls: bad signature type for client's ECDSA certificate")
 				break
 			}
 			ecdsaSig := new(ecdsaSignature)
@@ -569,7 +569,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 				break
 			}
 			if ecdsaSig.R.Sign() <= 0 || ecdsaSig.S.Sign() <= 0 {
-				err = errors.New("tls: ECDSA signature contained zero or negative values")
+				err = errors.New("gm tls: ECDSA signature contained zero or negative values")
 				break
 			}
 			var digest []byte
@@ -585,12 +585,12 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 				}, certVerify.signature, digest, nil)
 			default:
 				if !ecdsa.Verify(key, digest, ecdsaSig.R, ecdsaSig.S) {
-					err = errors.New("tls: ECDSA verification failure")
+					err = errors.New("gm tls: ECDSA verification failure")
 				}
 			}
 		case *rsa.PublicKey:
 			if signatureAndHash.signature != signatureRSA {
-				err = errors.New("tls: bad signature type for client's RSA certificate")
+				err = errors.New("gm tls: bad signature type for client's RSA certificate")
 				break
 			}
 			var digest []byte
@@ -602,7 +602,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 		}
 		if err != nil {
 			c.sendAlert(alertBadCertificate)
-			return errors.New("tls: could not validate signature of connection nonces: " + err.Error())
+			return errors.New("gm tls: could not validate signature of connection nonces: " + err.Error())
 		}
 
 		hs.finishedHash.Write(certVerify.marshal())
@@ -674,7 +674,7 @@ func (hs *serverHandshakeState) readFinished(out []byte) error {
 	if len(verify) != len(clientFinished.verifyData) ||
 		subtle.ConstantTimeCompare(verify, clientFinished.verifyData) != 1 {
 		c.sendAlert(alertHandshakeFailure)
-		return errors.New("tls: client's Finished message is incorrect")
+		return errors.New("gm tls: client's Finished message is incorrect")
 	}
 
 	hs.finishedHash.Write(clientFinished.marshal())
@@ -742,7 +742,7 @@ func (hs *serverHandshakeState) processCertsFromClient(certificates [][]byte) (c
 	for i, asn1Data := range certificates {
 		if certs[i], err = gcx.GetX509SM2().ParseCertificate(asn1Data); err != nil {
 			c.sendAlert(alertBadCertificate)
-			return nil, errors.New("tls: failed to parse client certificate: " + err.Error())
+			return nil, errors.New("gm tls: failed to parse client certificate: " + err.Error())
 		}
 	}
 
@@ -761,7 +761,7 @@ func (hs *serverHandshakeState) processCertsFromClient(certificates [][]byte) (c
 		chains, err := gcx.GetX509SM2().Verify(certs[0], opts)
 		if err != nil {
 			c.sendAlert(alertBadCertificate)
-			return nil, errors.New("tls: failed to verify client's certificate: " + err.Error())
+			return nil, errors.New("gm tls: failed to verify client's certificate: " + err.Error())
 		}
 
 		c.verifiedChains = chains
@@ -784,7 +784,7 @@ func (hs *serverHandshakeState) processCertsFromClient(certificates [][]byte) (c
 		pub = key
 	default:
 		c.sendAlert(alertUnsupportedCertificate)
-		return nil, fmt.Errorf("tls: client's certificate contains an unsupported public key of type %T", certs[0].PublicKey)
+		return nil, fmt.Errorf("gm tls: client's certificate contains an unsupported public key of type %T", certs[0].PublicKey)
 	}
 	c.peerCertificates = certs
 	return pub, nil

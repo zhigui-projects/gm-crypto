@@ -33,8 +33,8 @@ import (
 	"golang.org/x/crypto/curve25519"
 )
 
-var errClientKeyExchange = errors.New("tls: invalid ClientKeyExchange message")
-var errServerKeyExchange = errors.New("tls: invalid ServerKeyExchange message")
+var errClientKeyExchange = errors.New("gm tls: invalid ClientKeyExchange message")
+var errServerKeyExchange = errors.New("gm tls: invalid ServerKeyExchange message")
 
 // rsaKeyAgreement implements the standard TLS key agreement where the client
 // encrypts the pre-master secret to the server's public key.
@@ -59,7 +59,7 @@ func (ka rsaKeyAgreement) processClientKeyExchange(config *Config, cert *s.Certi
 	}
 	priv, ok := cert.PrivateKey.(crypto.Decrypter)
 	if !ok {
-		return nil, errors.New("tls: certificate private key does not implement crypto.Decrypter")
+		return nil, errors.New("gm tls: certificate private key does not implement crypto.Decrypter")
 	}
 	// Perform constant time RSA PKCS#1 v1.5 decryption
 	preMasterSecret, err := priv.Decrypt(config.rand(), ciphertext, &rsa.PKCS1v15DecryptOptions{SessionKeyLen: 48})
@@ -76,7 +76,7 @@ func (ka rsaKeyAgreement) processClientKeyExchange(config *Config, cert *s.Certi
 }
 
 func (ka rsaKeyAgreement) processServerKeyExchange(config *Config, clientHello *clientHelloMsg, serverHello *serverHelloMsg, cert *x.Certificate, skx *serverKeyExchangeMsg) error {
-	return errors.New("tls: unexpected ServerKeyExchange")
+	return errors.New("gm tls: unexpected ServerKeyExchange")
 }
 
 func (ka rsaKeyAgreement) generateClientKeyExchange(config *Config, clientHello *clientHelloMsg, cert *x.Certificate) ([]byte, *clientKeyExchangeMsg, error) {
@@ -128,7 +128,7 @@ func md5SHA1Hash(slices [][]byte) []byte {
 func hashForServerKeyExchange(sigAndHash signatureAndHash, version uint16, slices ...[]byte) ([]byte, crypto.Hash, error) {
 	if version >= VersionTLS12 {
 		if !isSupportedSignatureAndHash(sigAndHash, supportedSignatureAlgorithms) {
-			return nil, crypto.Hash(0), errors.New("tls: unsupported hash function used by peer")
+			return nil, crypto.Hash(0), errors.New("gm tls: unsupported hash function used by peer")
 		}
 		hashFunc, err := lookupTLSHash(sigAndHash.hash)
 		if err != nil {
@@ -167,7 +167,7 @@ func pickTLS12HashForSignature(sigType uint8, clientList []signatureAndHash) (ui
 		}
 	}
 
-	return 0, errors.New("tls: client doesn't support any common hash functions")
+	return 0, errors.New("gm tls: client doesn't support any common hash functions")
 }
 
 func curveForCurveID(id CurveID) (elliptic.Curve, bool) {
@@ -218,7 +218,7 @@ NextCandidate:
 	}
 
 	if ka.curveid == 0 {
-		return nil, errors.New("tls: no supported elliptic curves offered")
+		return nil, errors.New("gm tls: no supported elliptic curves offered")
 	}
 
 	var ecdhePublic []byte
@@ -235,7 +235,7 @@ NextCandidate:
 	} else {
 		curve, ok := curveForCurveID(ka.curveid)
 		if !ok {
-			return nil, errors.New("tls: preferredCurves includes unsupported curve")
+			return nil, errors.New("gm tls: preferredCurves includes unsupported curve")
 		}
 
 		var x, y *big.Int
@@ -271,7 +271,7 @@ NextCandidate:
 
 	priv, ok := cert.PrivateKey.(crypto.Signer)
 	if !ok {
-		return nil, errors.New("tls: certificate private key does not implement crypto.Signer")
+		return nil, errors.New("gm tls: certificate private key does not implement crypto.Signer")
 	}
 	var sig []byte
 	switch ka.sigType {
@@ -279,19 +279,19 @@ NextCandidate:
 		_, ok1 := priv.Public().(*primitive.Sm2PublicKey)
 		_, ok2 := priv.Public().(*ecdsa.PublicKey)
 		if !ok1 && !ok2 {
-			return nil, errors.New("tls: ECDHE ECDSA requires an ECDSA server key")
+			return nil, errors.New("gm tls: ECDHE ECDSA requires an ECDSA server key")
 		}
 	case signatureRSA:
 		_, ok := priv.Public().(*rsa.PublicKey)
 		if !ok {
-			return nil, errors.New("tls: ECDHE RSA requires a RSA server key")
+			return nil, errors.New("gm tls: ECDHE RSA requires a RSA server key")
 		}
 	default:
-		return nil, errors.New("tls: unknown ECDHE signature algorithm")
+		return nil, errors.New("gm tls: unknown ECDHE signature algorithm")
 	}
 	sig, err = SmCrypto.Sign(priv.(*primitive.Sm2PrivateKey), digest, hashFunc)
 	if err != nil {
-		return nil, errors.New("tls: failed to sign ECDHE parameters: " + err.Error())
+		return nil, errors.New("gm tls: failed to sign ECDHE parameters: " + err.Error())
 	}
 
 	skx := new(serverKeyExchangeMsg)
@@ -355,7 +355,7 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 		return errServerKeyExchange
 	}
 	if skx.key[0] != 3 { // named curve
-		return errors.New("tls: server selected unsupported curve")
+		return errors.New("gm tls: server selected unsupported curve")
 	}
 	ka.curveid = CurveID(skx.key[1])<<8 | CurveID(skx.key[2])
 
@@ -373,13 +373,13 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 
 	if ka.curveid == X25519 {
 		if len(publicKey) != 32 {
-			return errors.New("tls: bad X25519 public value")
+			return errors.New("gm tls: bad X25519 public value")
 		}
 		ka.publicKey = publicKey
 	} else {
 		curve, ok := curveForCurveID(ka.curveid)
 		if !ok {
-			return errors.New("tls: server selected unsupported curve")
+			return errors.New("gm tls: server selected unsupported curve")
 		}
 
 		ka.x, ka.y = elliptic.Unmarshal(curve, publicKey)
@@ -423,10 +423,10 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 				return err
 			}
 			if ecdsaSig.R.Sign() <= 0 || ecdsaSig.S.Sign() <= 0 {
-				return errors.New("tls: ECDSA signature contained zero or negative values")
+				return errors.New("gm tls: ECDSA signature contained zero or negative values")
 			}
 			if !ecdsa.Verify(pubKey, digest, ecdsaSig.R, ecdsaSig.S) {
-				return errors.New("tls: ECDSA verification failure")
+				return errors.New("gm tls: ECDSA verification failure")
 			}
 		case *primitive.Sm2PublicKey:
 			pubKey, _ := cert.PublicKey.(*primitive.Sm2PublicKey)
@@ -435,24 +435,24 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 				return err
 			}
 			if ecdsaSig.R.Sign() <= 0 || ecdsaSig.S.Sign() <= 0 {
-				return errors.New("tls: ECDSA signature contained zero or negative values")
+				return errors.New("gm tls: ECDSA signature contained zero or negative values")
 			}
 			if ok, err := SmCrypto.Verify(pubKey, sig, digest, nil); !ok {
 				return err
 			}
 		default:
-			return errors.New("tls: ECDHE ECDSA requires a ECDSA server public key")
+			return errors.New("gm tls: ECDHE ECDSA requires a ECDSA server public key")
 		}
 	case signatureRSA:
 		pubKey, ok := cert.PublicKey.(*rsa.PublicKey)
 		if !ok {
-			return errors.New("tls: ECDHE RSA requires a RSA server public key")
+			return errors.New("gm tls: ECDHE RSA requires a RSA server public key")
 		}
 		if err := rsa.VerifyPKCS1v15(pubKey, hashFunc, digest, sig); err != nil {
 			return err
 		}
 	default:
-		return errors.New("tls: unknown ECDHE signature algorithm")
+		return errors.New("gm tls: unknown ECDHE signature algorithm")
 	}
 
 	return nil
@@ -460,7 +460,7 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 
 func (ka *ecdheKeyAgreement) generateClientKeyExchange(config *Config, clientHello *clientHelloMsg, cert *x.Certificate) ([]byte, *clientKeyExchangeMsg, error) {
 	if ka.curveid == 0 {
-		return nil, nil, errors.New("tls: missing ServerKeyExchange message")
+		return nil, nil, errors.New("gm tls: missing ServerKeyExchange message")
 	}
 
 	var serialized, preMasterSecret []byte

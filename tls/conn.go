@@ -206,7 +206,7 @@ func (hc *halfConn) incSeq() {
 	// Not allowed to let sequence number wrap.
 	// Instead, must renegotiate before it does.
 	// Not likely enough to bother.
-	panic("TLS: sequence number wraparound")
+	panic("GM TLS: sequence number wraparound")
 }
 
 // extractPadding returns, in constant time, the length of the padding to remove
@@ -558,7 +558,7 @@ type RecordHeaderError struct {
 	RecordHeader [5]byte
 }
 
-func (e RecordHeaderError) Error() string { return "tls: " + e.Msg }
+func (e RecordHeaderError) Error() string { return "gm tls: " + e.Msg }
 
 func (c *Conn) newRecordHeaderError(msg string) (err RecordHeaderError) {
 	err.Msg = msg
@@ -577,16 +577,16 @@ func (c *Conn) readRecord(want recordType) error {
 	switch want {
 	default:
 		c.sendAlert(alertInternalError)
-		return c.in.setErrorLocked(errors.New("tls: unknown record type requested"))
+		return c.in.setErrorLocked(errors.New("gm tls: unknown record type requested"))
 	case recordTypeHandshake, recordTypeChangeCipherSpec:
 		if c.handshakeComplete {
 			c.sendAlert(alertInternalError)
-			return c.in.setErrorLocked(errors.New("tls: handshake or ChangeCipherSpec requested while not in handshake"))
+			return c.in.setErrorLocked(errors.New("gm tls: handshake or ChangeCipherSpec requested while not in handshake"))
 		}
 	case recordTypeApplicationData:
 		if !c.handshakeComplete {
 			c.sendAlert(alertInternalError)
-			return c.in.setErrorLocked(errors.New("tls: application data record requested while in handshake"))
+			return c.in.setErrorLocked(errors.New("gm tls: application data record requested while in handshake"))
 		}
 	}
 
@@ -957,7 +957,7 @@ func (c *Conn) readHandshake() (interface{}, error) {
 	n := int(data[1])<<16 | int(data[2])<<8 | int(data[3])
 	if n > maxHandshake {
 		c.sendAlertLocked(alertInternalError)
-		return nil, c.in.setErrorLocked(fmt.Errorf("tls: handshake message of length %d bytes exceeds maximum of %d bytes", n, maxHandshake))
+		return nil, c.in.setErrorLocked(fmt.Errorf("gm tls: handshake message of length %d bytes exceeds maximum of %d bytes", n, maxHandshake))
 	}
 	for c.hand.Len() < 4+n {
 		if err := c.in.err; err != nil {
@@ -1016,8 +1016,8 @@ func (c *Conn) readHandshake() (interface{}, error) {
 }
 
 var (
-	errClosed   = errors.New("tls: use of closed connection")
-	errShutdown = errors.New("tls: protocol is shutdown")
+	errClosed   = errors.New("gm tls: use of closed connection")
+	errShutdown = errors.New("gm tls: protocol is shutdown")
 )
 
 // Write writes data to the connection.
@@ -1106,7 +1106,7 @@ func (c *Conn) handleRenegotiation() error {
 		// Ok.
 	default:
 		c.sendAlert(alertInternalError)
-		return errors.New("tls: unknown Renegotiation value")
+		return errors.New("gm tls: unknown Renegotiation value")
 	}
 
 	c.handshakeMutex.Lock()
@@ -1225,7 +1225,7 @@ func (c *Conn) Close() error {
 	return alertErr
 }
 
-var errEarlyCloseWrite = errors.New("tls: CloseWrite called before handshake complete")
+var errEarlyCloseWrite = errors.New("gm tls: CloseWrite called before handshake complete")
 
 // CloseWrite shuts down the writing side of the connection. It should only be
 // called once the handshake has completed and does not call CloseWrite on the
@@ -1383,13 +1383,13 @@ func (c *Conn) VerifyHostname(host string) error {
 	c.handshakeMutex.Lock()
 	defer c.handshakeMutex.Unlock()
 	if !c.isClient {
-		return errors.New("tls: VerifyHostname called on TLS server connection")
+		return errors.New("gm tls: VerifyHostname called on TLS server connection")
 	}
 	if !c.handshakeComplete {
-		return errors.New("tls: handshake has not yet been performed")
+		return errors.New("gm tls: handshake has not yet been performed")
 	}
 	if len(c.verifiedChains) == 0 {
-		return errors.New("tls: handshake did not verify certificate chain")
+		return errors.New("gm tls: handshake did not verify certificate chain")
 	}
 	return c.peerCertificates[0].VerifyHostname(host)
 }
