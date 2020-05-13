@@ -104,7 +104,8 @@ func testVerify(t *testing.T, useSystemRoots bool) {
 		if !useSystemRoots {
 			opts.Roots = x.NewCertPool()
 			for j, root := range test.roots {
-				ok := opts.Roots.AppendCertsFromPEM([]byte(root))
+				certPool := CopyFrom(opts.Roots)
+				ok := certPool.AppendCertsFromPEM([]byte(root))
 				if !ok {
 					t.Errorf("#%d: failed to parse root #%d", i, j)
 					return
@@ -113,7 +114,8 @@ func testVerify(t *testing.T, useSystemRoots bool) {
 		}
 
 		for j, intermediate := range test.intermediates {
-			ok := opts.Intermediates.AppendCertsFromPEM([]byte(intermediate))
+			certPool := CopyFrom(opts.Intermediates)
+			ok := certPool.AppendCertsFromPEM([]byte(intermediate))
 			if !ok {
 				t.Errorf("#%d: failed to parse intermediate #%d", i, j)
 				return
@@ -180,9 +182,9 @@ func testVerify(t *testing.T, useSystemRoots bool) {
 	}
 }
 
-//func TestGoVerify(t *testing.T) {
-//	testVerify(t, false)
-//}
+func TestGoVerify(t *testing.T) {
+	testVerify(t, false)
+}
 
 func TestSystemVerify(t *testing.T) {
 	if runtime.GOOS != "windows" {
