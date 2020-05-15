@@ -90,7 +90,7 @@ var X509Instance Context
 func InitX509(algo string) {
 	switch algo {
 	case SM2:
-		X509Instance = GetX509SM2(algo)
+		X509Instance = GetX509SM2()
 	default:
 		X509Instance = GetX509Std(algo)
 	}

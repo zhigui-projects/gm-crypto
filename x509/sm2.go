@@ -29,9 +29,9 @@ var (
 	sm2Instance *x509SM2
 )
 
-func GetX509SM2(algo string) Context {
+func GetX509SM2() Context {
 	sm2Once.Do(func() {
-		sm2Instance = &x509SM2{algo}
+		sm2Instance = &x509SM2{SM2}
 		RegisterHash(SM3, 32, SmCrypto.NewSm3)
 	})
 
