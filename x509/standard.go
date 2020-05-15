@@ -9,6 +9,7 @@ import (
 )
 
 type x509Std struct {
+	algo string
 }
 
 var (
@@ -16,12 +17,16 @@ var (
 	stdInstance *x509Std
 )
 
-func GetX509Std() Context {
+func GetX509Std(algo string) Context {
 	stdOnce.Do(func() {
-		stdInstance = &x509Std{}
+		stdInstance = &x509Std{algo}
 	})
 
 	return stdInstance
+}
+
+func (s *x509Std) AlgorithmName() string {
+	return s.algo
 }
 
 func (s *x509Std) ParsePKIXPublicKey(derBytes []byte) (pub interface{}, err error) {

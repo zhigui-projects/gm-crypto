@@ -10,6 +10,8 @@ import (
 )
 
 type Context interface {
+	// AlgorithmName return certificate asymmetric algorithm type.
+	AlgorithmName() string
 	// ParsePKIXPublicKey parses a public key in PKIX, ASN.1 DER form.
 	//
 	// It returns a *rsa.PublicKey, *dsa.PublicKey, *ecdsa.PublicKey,
@@ -88,9 +90,9 @@ var X509Instance Context
 func InitX509(algo string) {
 	switch algo {
 	case SM2:
-		X509Instance = GetX509SM2()
+		X509Instance = GetX509SM2(algo)
 	default:
-		X509Instance = GetX509Std()
+		X509Instance = GetX509Std(algo)
 	}
 }
 
