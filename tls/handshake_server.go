@@ -740,7 +740,7 @@ func (hs *serverHandshakeState) processCertsFromClient(certificates [][]byte) (c
 	certs := make([]*x.Certificate, len(certificates))
 	var err error
 	for i, asn1Data := range certificates {
-		if certs[i], err = gcx.GetX509SM2().ParseCertificate(asn1Data); err != nil {
+		if certs[i], err = gcx.GetX509().ParseCertificate(asn1Data); err != nil {
 			c.sendAlert(alertBadCertificate)
 			return nil, errors.New("gm tls: failed to parse client certificate: " + err.Error())
 		}
@@ -758,7 +758,7 @@ func (hs *serverHandshakeState) processCertsFromClient(certificates [][]byte) (c
 			opts.Intermediates.AddCert(cert)
 		}
 
-		chains, err := gcx.GetX509SM2().Verify(certs[0], opts)
+		chains, err := gcx.GetX509().Verify(certs[0], opts)
 		if err != nil {
 			c.sendAlert(alertBadCertificate)
 			return nil, errors.New("gm tls: failed to verify client's certificate: " + err.Error())

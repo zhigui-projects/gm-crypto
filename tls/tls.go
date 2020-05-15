@@ -253,7 +253,7 @@ func X509KeyPair(certPEMBlock, keyPEMBlock []byte) (s.Certificate, error) {
 
 	// We don't need to parse the public key for TLS, but we so do anyway
 	// to check that it looks sane and matches the private key.
-	x509Cert, err := gcx.GetX509SM2().ParseCertificate(cert.Certificate[0])
+	x509Cert, err := gcx.GetX509().ParseCertificate(cert.Certificate[0])
 	if err != nil {
 		return fail(err)
 	}

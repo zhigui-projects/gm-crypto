@@ -290,7 +290,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		// (optionally) verify the server's certificates.
 		certs := make([]*x.Certificate, len(certMsg.certificates))
 		for i, asn1Data := range certMsg.certificates {
-			cert, err := gcx.GetX509SM2().ParseCertificate(asn1Data)
+			cert, err := gcx.GetX509().ParseCertificate(asn1Data)
 			if err != nil {
 				c.sendAlert(alertBadCertificate)
 				return errors.New("gm tls: failed to parse certificate from server: " + err.Error())
@@ -312,7 +312,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 				}
 				opts.Intermediates.AddCert(cert)
 			}
-			c.verifiedChains, err = gcx.GetX509SM2().Verify(certs[0], opts)
+			c.verifiedChains, err = gcx.GetX509().Verify(certs[0], opts)
 			if err != nil {
 				c.sendAlert(alertBadCertificate)
 				return err
@@ -766,7 +766,7 @@ findCert:
 			// node, or if chain.Leaf was nil
 			if j != 0 || x509Cert == nil {
 				var err error
-				if x509Cert, err = gcx.GetX509SM2().ParseCertificate(cert); err != nil {
+				if x509Cert, err = gcx.GetX509().ParseCertificate(cert); err != nil {
 					c.sendAlert(alertInternalError)
 					return nil, errors.New("gm tls: failed to parse client certificate #" + strconv.Itoa(i) + ": " + err.Error())
 				}

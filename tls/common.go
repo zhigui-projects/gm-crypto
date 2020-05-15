@@ -755,7 +755,7 @@ func (c *Config) BuildNameToCertificate() {
 	c.NameToCertificate = make(map[string]*s.Certificate)
 	for i := range c.Certificates {
 		cert := &c.Certificates[i]
-		x509Cert, err := gcx.GetX509SM2().ParseCertificate(cert.Certificate[0])
+		x509Cert, err := gcx.GetX509().ParseCertificate(cert.Certificate[0])
 		if err != nil {
 			continue
 		}
