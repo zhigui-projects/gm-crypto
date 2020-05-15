@@ -307,9 +307,6 @@ func X509KeyPair(certPEMBlock, keyPEMBlock []byte) (s.Certificate, error) {
 // PKCS#1 private keys by default, while OpenSSL 1.0.0 generates PKCS#8 keys.
 // OpenSSL ecparam generates SEC1 EC private keys for ECDSA. We try all three.
 func parsePrivateKey(der []byte) (crypto.PrivateKey, error) {
-	if key, err := SmCrypto.ParsePKCS8UnecryptedPrivateKey(der); err == nil {
-		return key, nil
-	}
 	if key, err := x.ParsePKCS1PrivateKey(der); err == nil {
 		return key, nil
 	}
@@ -325,6 +322,8 @@ func parsePrivateKey(der []byte) (crypto.PrivateKey, error) {
 	if key, err := x.ParseECPrivateKey(der); err == nil {
 		return key, nil
 	}
-
+	if key, err := SmCrypto.ParsePKCS8UnecryptedPrivateKey(der); err == nil {
+		return key, nil
+	}
 	return nil, errors.New("gm tls: failed to parse private key")
 }
