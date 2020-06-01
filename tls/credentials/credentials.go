@@ -76,17 +76,6 @@ var (
 	ErrConnDispatched = errors.New("credentials: rawConn is dispatched out of gRPC")
 )
 
-// TLSInfo contains the auth information for a TLS authenticated connection.
-// It implements the AuthInfo interface.
-type TLSInfo struct {
-	State gcs.ConnectionState
-}
-
-// AuthType returns the type of TLSInfo as a string.
-func (t TLSInfo) AuthType() string {
-	return "tls"
-}
-
 // tlsCreds is the credentials required for authenticating a connection using TLS.
 type tlsCreds struct {
 	// TLS configuration
@@ -124,7 +113,7 @@ func (c *tlsCreds) ClientHandshake(ctx context.Context, addr string, rawConn net
 	case <-ctx.Done():
 		return nil, nil, ctx.Err()
 	}
-	return conn, TLSInfo{conn.ConnectionState()}, nil
+	return conn, credentials.TLSInfo{State: conn.ConnectionState()}, nil
 }
 
 func (c *tlsCreds) ServerHandshake(rawConn net.Conn) (net.Conn, credentials.AuthInfo, error) {
@@ -132,7 +121,7 @@ func (c *tlsCreds) ServerHandshake(rawConn net.Conn) (net.Conn, credentials.Auth
 	if err := conn.Handshake(); err != nil {
 		return nil, nil, err
 	}
-	return conn, TLSInfo{conn.ConnectionState()}, nil
+	return conn, credentials.TLSInfo{State: conn.ConnectionState()}, nil
 }
 
 func (c *tlsCreds) Clone() credentials.TransportCredentials {

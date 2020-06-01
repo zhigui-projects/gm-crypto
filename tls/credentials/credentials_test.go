@@ -21,6 +21,10 @@ const (
 	address = "localhost:50051"
 )
 
+func init() {
+	gcx.InitX509(gcx.SM2)
+}
+
 var end chan bool
 
 type server struct{}

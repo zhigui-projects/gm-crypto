@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"crypto/cipher"
 	"crypto/subtle"
+	s "crypto/tls"
 	x "crypto/x509"
 	"errors"
 	"fmt"
@@ -1337,11 +1338,11 @@ func (c *Conn) Handshake() error {
 }
 
 // ConnectionState returns basic TLS details about the connection.
-func (c *Conn) ConnectionState() ConnectionState {
+func (c *Conn) ConnectionState() s.ConnectionState {
 	c.handshakeMutex.Lock()
 	defer c.handshakeMutex.Unlock()
 
-	var state ConnectionState
+	var state s.ConnectionState
 	state.HandshakeComplete = c.handshakeComplete
 	state.ServerName = c.serverName
 

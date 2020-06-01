@@ -21,6 +21,7 @@ import (
 var SmCrypto = gm_plugins.GetSmCryptoSuite()
 
 type x509SM2 struct {
+	algo string
 }
 
 var (
@@ -30,7 +31,7 @@ var (
 
 func GetX509SM2() Context {
 	sm2Once.Do(func() {
-		sm2Instance = &x509SM2{}
+		sm2Instance = &x509SM2{SM2}
 		RegisterHash(SM3, 32, SmCrypto.NewSm3)
 	})
 
@@ -65,6 +66,10 @@ var signatureAlgorithmDetails = []struct {
 	{SM2WithSM3, "SM2-SM3", oidSignatureSM2WithSM3, x.ECDSA, SM3},
 	{SM2WithSHA1, "SM2-SHA1", oidSignatureSM2WithSHA1, x.ECDSA, Hash(crypto.SHA1)},
 	{SM2WithSHA256, "SM2-SHA256", oidSignatureSM2WithSHA256, x.ECDSA, Hash(crypto.SHA256)},
+}
+
+func (s *x509SM2) AlgorithmName() string {
+	return s.algo
 }
 
 func (s *x509SM2) ParsePKIXPublicKey(derBytes []byte) (pub interface{}, err error) {
