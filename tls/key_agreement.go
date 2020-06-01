@@ -289,7 +289,12 @@ NextCandidate:
 	default:
 		return nil, errors.New("gm tls: unknown ECDHE signature algorithm")
 	}
-	sig, err = SmCrypto.Sign(priv.(*primitive.Sm2PrivateKey), digest, hashFunc)
+    _, ok = priv.(*primitive.Sm2PrivateKey)
+    if ok{
+	    sig, err = SmCrypto.Sign(priv.(*primitive.Sm2PrivateKey), digest, hashFunc)
+	} else {
+	    sig, err = priv.Sign(config.Rand, digest, hashFunc)
+    }
 	if err != nil {
 		return nil, errors.New("gm tls: failed to sign ECDHE parameters: " + err.Error())
 	}
