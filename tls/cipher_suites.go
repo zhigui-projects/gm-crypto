@@ -431,7 +431,7 @@ const (
 	TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305  uint16 = 0xcca9
 	////
 	GMTLS_SM2DHE_SM2SIGN_WITH_SMS4_CBC_SM3      uint16 = 0xe011
-	GMTLS_SM2DHE_SM2SIGN_WITH_SMS4_GCM_SM3      uint16 = 0xe012
+	GMTLS_SM2DHE_SM2SIGN_WITH_SMS4_GCM_SM3      uint16 = 0xe051
 	// TLS_FALLBACK_SCSV isn's a standard cipher suite but an indicator
 	// that the client is doing version fallback. See
 	// https://tools.ietf.org/html/rfc7507.
