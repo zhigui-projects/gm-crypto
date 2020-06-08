@@ -23,6 +23,8 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"errors"
+	gmx509 "github.com/zhigui-projects/gm-crypto/x509"
+	gm_plugins "github.com/zhigui-projects/gm-plugins"
 	"hash"
 )
 
@@ -142,13 +144,29 @@ func prfAndHashForVersion(version uint16, suite *cipherSuite) (func(result, secr
 		if suite.flags&suiteSHA384 != 0 {
 			return prf12(sha512.New384), crypto.SHA384
 		}
+		//return prf12(gm_plugins.GetSmCryptoSuite().NewSm3) , crypto.SHA256
 		return prf12(sha256.New), crypto.SHA256
 	default:
 		panic("unknown version")
 	}
 }
 
+func prfAndHashForVersionGM(version uint16, suite *cipherSuite) (func(result, secret, label, seed []byte), gmx509.Hash) {
+	switch version {
+
+	case VersionTLS12:
+
+		return prf12(gm_plugins.GetSmCryptoSuite().NewSm3) , gmx509.SM3
+
+	default:
+		panic("unknown version")
+	}
+}
 func prfForVersion(version uint16, suite *cipherSuite) func(result, secret, label, seed []byte) {
+	if isGM {
+		prf, _ := prfAndHashForVersionGM(version, suite)
+		return prf
+	}
 	prf, _ := prfAndHashForVersion(version, suite)
 	return prf
 }
@@ -200,6 +218,15 @@ func lookupTLSHash(hash uint8) (crypto.Hash, error) {
 		return crypto.SHA256, nil
 	case hashSHA384:
 		return crypto.SHA384, nil
+
+	default:
+		return 0, errors.New("gm tls: unsupported hash algorithm")
+	}
+}
+func lookupGMTLSHash(hash uint8) (gmx509.Hash, error) {
+	switch hash {
+	case hashSM3:
+		return gmx509.SM3, nil
 	default:
 		return 0, errors.New("gm tls: unsupported hash algorithm")
 	}
@@ -210,10 +237,18 @@ func newFinishedHash(version uint16, cipherSuite *cipherSuite) finishedHash {
 	if version == VersionSSL30 || version >= VersionTLS12 {
 		buffer = []byte{}
 	}
+	var prf func(result, secret, label, seed []byte)
+	if isGM {
+		prf, hash := prfAndHashForVersionGM(version, cipherSuite)
+		if hash != 0 {
+			return finishedHash{hash.New(), hash.New(), nil, nil, buffer, version, prf}
+		}
 
-	prf, hash := prfAndHashForVersion(version, cipherSuite)
-	if hash != 0 {
-		return finishedHash{hash.New(), hash.New(), nil, nil, buffer, version, prf}
+	} else{
+		prf, hash := prfAndHashForVersion(version, cipherSuite)
+		if hash != 0 {
+			return finishedHash{hash.New(), hash.New(), nil, nil, buffer, version, prf}
+		}
 	}
 
 	return finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), buffer, version, prf}
@@ -356,13 +391,25 @@ func (h finishedHash) hashForClientCertificate(signatureAndHash signatureAndHash
 		return finishedSum30(md5Hash, sha1Hash, masterSecret, nil), crypto.MD5SHA1, nil
 	}
 	if h.version >= VersionTLS12 {
-		hashAlg, err := lookupTLSHash(signatureAndHash.hash)
-		if err != nil {
-			return nil, 0, err
+		if signatureAndHash.hash >= 100 {
+			hashAlg, err := lookupGMTLSHash(signatureAndHash.hash)
+			if err != nil {
+				return nil, 0, err
+			}
+			hash := hashAlg.New()
+			hash.Write(h.buffer)
+			return hash.Sum(nil), hashAlg.HashFunc(), nil
+
+		} else{
+			hashAlg, err := lookupTLSHash(signatureAndHash.hash)
+			if err != nil {
+				return nil, 0, err
+			}
+			hash := hashAlg.New()
+			hash.Write(h.buffer)
+			return hash.Sum(nil), hashAlg, nil
 		}
-		hash := hashAlg.New()
-		hash.Write(h.buffer)
-		return hash.Sum(nil), hashAlg, nil
+
 	}
 
 	if signatureAndHash.signature == signatureECDSA {

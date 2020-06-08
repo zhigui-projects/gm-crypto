@@ -130,16 +130,30 @@ func hashForServerKeyExchange(sigAndHash signatureAndHash, version uint16, slice
 		if !isSupportedSignatureAndHash(sigAndHash, supportedSignatureAlgorithms) {
 			return nil, crypto.Hash(0), errors.New("gm tls: unsupported hash function used by peer")
 		}
-		hashFunc, err := lookupTLSHash(sigAndHash.hash)
-		if err != nil {
-			return nil, crypto.Hash(0), err
+		if sigAndHash.hash < 100 {
+			hashFunc, err := lookupTLSHash(sigAndHash.hash)
+			if err != nil {
+				return nil, crypto.Hash(0), err
+			}
+			h := hashFunc.New()
+			for _, slice := range slices {
+				h.Write(slice)
+			}
+			digest := h.Sum(nil)
+			return digest, hashFunc.HashFunc(), nil
+		} else {    //gm-sm3
+			hashFunc, err := lookupGMTLSHash(sigAndHash.hash)
+			if err != nil {
+				return nil, crypto.Hash(0), err
+			}
+			h := hashFunc.New()
+			for _, slice := range slices {
+				h.Write(slice)
+			}
+			digest := h.Sum(nil)
+			return digest, hashFunc.HashFunc(), nil
 		}
-		h := hashFunc.New()
-		for _, slice := range slices {
-			h.Write(slice)
-		}
-		digest := h.Sum(nil)
-		return digest, hashFunc, nil
+
 	}
 	if sigAndHash.signature == signatureECDSA {
 		return sha1Hash(slices), crypto.SHA1, nil

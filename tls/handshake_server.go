@@ -827,7 +827,9 @@ func (hs *serverHandshakeState) setCipherSuite(id uint16, supportedCipherSuites 
 				continue
 			}
 			hs.suite = candidate
+			isGM = (hs.suite.id & 0xff00 == GM_SUITE)
 			return true
+
 		}
 	}
 	return false

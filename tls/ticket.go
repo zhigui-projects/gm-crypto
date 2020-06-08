@@ -23,6 +23,8 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"errors"
+	gm_plugins "github.com/zhigui-projects/gm-plugins"
+	"hash"
 	"io"
 )
 
@@ -152,13 +154,25 @@ func (c *Conn) encryptTicket(state *sessionState) ([]byte, error) {
 	}
 	key := c.config.ticketKeys()[0]
 	copy(keyName, key.keyName[:])
-	block, err := aes.NewCipher(key.aesKey[:])
+	var block cipher.Block
+	var err error
+	if isGM{
+		block, err = gm_plugins.GetSmCryptoSuite().NewSm4Cipher(key.aesKey[:])
+	} else {
+		block, err = aes.NewCipher(key.aesKey[:])
+	}
+
+
 	if err != nil {
 		return nil, errors.New("gm tls: failed to create cipher while encrypting ticket: " + err.Error())
 	}
 	cipher.NewCTR(block, iv).XORKeyStream(encrypted[ticketKeyNameLen+aes.BlockSize:], serialized)
-
-	mac := hmac.New(sha256.New, key.hmacKey[:])
+	var mac hash.Hash
+	if isGM {
+		mac = hmac.New(gm_plugins.GetSmCryptoSuite().NewSm3, key.hmacKey[:])
+	} else {
+		mac = hmac.New(sha256.New, key.hmacKey[:])
+	}
 	mac.Write(encrypted[:len(encrypted)-sha256.Size])
 	mac.Sum(macBytes[:0])
 
@@ -188,16 +202,30 @@ func (c *Conn) decryptTicket(encrypted []byte) (*sessionState, bool) {
 		return nil, false
 	}
 	key := &keys[keyIndex]
+	var mac hash.Hash
 
-	mac := hmac.New(sha256.New, key.hmacKey[:])
+
+	if isGM {
+		mac = hmac.New(gm_plugins.GetSmCryptoSuite().NewSm3, key.hmacKey[:])
+	} else {
+		mac = hmac.New(sha256.New, key.hmacKey[:])
+	}
+
+	//mac := hmac.New(sha256.New, key.hmacKey[:])
 	mac.Write(encrypted[:len(encrypted)-sha256.Size])
 	expected := mac.Sum(nil)
 
 	if subtle.ConstantTimeCompare(macBytes, expected) != 1 {
 		return nil, false
 	}
-
-	block, err := aes.NewCipher(key.aesKey[:])
+	var block cipher.Block
+	var err error
+    if isGM{
+		block, err = gm_plugins.GetSmCryptoSuite().NewSm4Cipher(key.aesKey[:])
+	} else {
+		block, err = aes.NewCipher(key.aesKey[:])
+	}
+	//block, err := aes.NewCipher(key.aesKey[:])
 	if err != nil {
 		return nil, false
 	}

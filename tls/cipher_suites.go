@@ -26,7 +26,7 @@ import (
 	s "crypto/tls"
 	x "crypto/x509"
 	"hash"
-
+	gm_plugins "github.com/zhigui-projects/gm-plugins"
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
@@ -114,6 +114,11 @@ var cipherSuites = []*cipherSuite{
 	{TLS_RSA_WITH_RC4_128_SHA, 16, 20, 0, rsaKA, suiteDefaultOff, cipherRC4, macSHA1, nil},
 	{TLS_ECDHE_RSA_WITH_RC4_128_SHA, 16, 20, 0, ecdheRSAKA, suiteECDHE | suiteDefaultOff, cipherRC4, macSHA1, nil},
 	{TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, 16, 20, 0, ecdheECDSAKA, suiteECDHE | suiteECDSA | suiteDefaultOff, cipherRC4, macSHA1, nil},
+	// gmssl
+	{GMTLS_SM2DHE_SM2SIGN_WITH_SMS4_CBC_SM3, 16, 32, 16, ecdheECDSAKA, suiteECDHE | suiteECDSA | suiteTLS12 , cipherSM4, macSM3, nil},
+	{GMTLS_SM2DHE_SM2SIGN_WITH_SMS4_GCM_SM3, 16, 0, 4, ecdheECDSAKA, suiteECDHE | suiteECDSA | suiteTLS12, nil, nil, aeadSM4GCM},
+
+
 }
 
 func cipherRC4(key, iv []byte, isRead bool) interface{} {
@@ -131,6 +136,13 @@ func cipher3DES(key, iv []byte, isRead bool) interface{} {
 
 func cipherAES(key, iv []byte, isRead bool) interface{} {
 	block, _ := aes.NewCipher(key)
+	if isRead {
+		return cipher.NewCBCDecrypter(block, iv)
+	}
+	return cipher.NewCBCEncrypter(block, iv)
+}
+func cipherSM4(key, iv []byte, isRead bool) interface{} {
+	block, _ :=  gm_plugins.GetSmCryptoSuite().NewSm4Cipher(key)
 	if isRead {
 		return cipher.NewCBCDecrypter(block, iv)
 	}
@@ -154,6 +166,9 @@ func macSHA1(version uint16, key []byte) macFunction {
 // so the given version is ignored.
 func macSHA256(version uint16, key []byte) macFunction {
 	return tls10MAC{hmac.New(sha256.New, key)}
+}
+func macSM3(version uint16, key []byte) macFunction {
+	return tls10MAC{hmac.New(gm_plugins.GetSmCryptoSuite().NewSm3, key)}
 }
 
 type macFunction interface {
@@ -241,7 +256,20 @@ func aeadAESGCM(key, fixedNonce []byte) cipher.AEAD {
 	copy(ret.nonce[:], fixedNonce)
 	return ret
 }
+func aeadSM4GCM(key, fixedNonce []byte) cipher.AEAD {
+	sm4, err := gm_plugins.GetSmCryptoSuite().NewSm4Cipher(key)
+	if err != nil {
+		panic(err)
+	}
+	aead, err := cipher.NewGCM(sm4)
+	if err != nil {
+		panic(err)
+	}
 
+	ret := &fixedNonceAEAD{aead: aead}
+	copy(ret.nonce[:], fixedNonce)
+	return ret
+}
 func aeadChaCha20Poly1305(key, fixedNonce []byte) cipher.AEAD {
 	aead, err := chacha20poly1305.New(key)
 	if err != nil {
@@ -373,6 +401,7 @@ func mutualCipherSuite(have []uint16, want uint16) *cipherSuite {
 	return nil
 }
 
+const GM_SUITE = 0xe000
 // A list of cipher suite IDs that are, or have been, implemented by this
 // package.
 //
@@ -400,7 +429,9 @@ const (
 	TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 uint16 = 0xc02c
 	TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305    uint16 = 0xcca8
 	TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305  uint16 = 0xcca9
-
+	////
+	GMTLS_SM2DHE_SM2SIGN_WITH_SMS4_CBC_SM3      uint16 = 0xe011
+	GMTLS_SM2DHE_SM2SIGN_WITH_SMS4_GCM_SM3      uint16 = 0xe012
 	// TLS_FALLBACK_SCSV isn's a standard cipher suite but an indicator
 	// that the client is doing version fallback. See
 	// https://tools.ietf.org/html/rfc7507.

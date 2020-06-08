@@ -191,6 +191,7 @@ NextCipherSuite:
 	c.haveVers = true
 
 	suite := mutualCipherSuite(hello.cipherSuites, serverHello.cipherSuite)
+	isGM = (suite.id & 0xff00 == GM_SUITE)
 	if suite == nil {
 		c.sendAlert(alertHandshakeFailure)
 		return errors.New("gm tls: server chose an unconfigured cipher suite")
@@ -688,12 +689,12 @@ func (hs *clientHandshakeState) sendFinished(out []byte) error {
 
 // tls11SignatureSchemes contains the signature schemes that we synthesise for
 // a TLS <= 1.1 connection, based on the supported certificate types.
-var tls11SignatureSchemes = []SignatureScheme{ECDSAWithP256AndSHA256, ECDSAWithP384AndSHA384, ECDSAWithP521AndSHA512, PKCS1WithSHA256, PKCS1WithSHA384, PKCS1WithSHA512, PKCS1WithSHA1}
+var tls11SignatureSchemes = []SignatureScheme{ECDSAWithP256SM2AndSM3, ECDSAWithP256AndSHA256, ECDSAWithP384AndSHA384, ECDSAWithP521AndSHA512, PKCS1WithSHA256, PKCS1WithSHA384, PKCS1WithSHA512, PKCS1WithSHA1}
 
 const (
 	// tls11SignatureSchemesNumECDSA is the number of initial elements of
 	// tls11SignatureSchemes that use ECDSA.
-	tls11SignatureSchemesNumECDSA = 3
+	tls11SignatureSchemesNumECDSA = 4
 	// tls11SignatureSchemesNumRSA is the number of trailing elements of
 	// tls11SignatureSchemes that use RSA.
 	tls11SignatureSchemesNumRSA = 4

@@ -33,6 +33,8 @@ import (
 	gcx "github.com/zhigui-projects/gm-crypto/x509"
 )
 
+var isGM = true
+
 const (
 	VersionSSL30 = 0x0300
 	VersionTLS10 = 0x0301
@@ -144,6 +146,7 @@ const (
 	hashSHA1   uint8 = 2
 	hashSHA256 uint8 = 4
 	hashSHA384 uint8 = 5
+	hashSM3    uint8 = 100
 )
 
 // Signature algorithms for TLS 1.2 (See RFC 5246, section A.4.1)
@@ -162,12 +165,14 @@ type signatureAndHash struct {
 // the code advertises as supported in a TLS 1.2 ClientHello and in a TLS 1.2
 // CertificateRequest.
 var supportedSignatureAlgorithms = []signatureAndHash{
+	{hashSM3,signatureECDSA},
 	{hashSHA256, signatureRSA},
 	{hashSHA256, signatureECDSA},
 	{hashSHA384, signatureRSA},
 	{hashSHA384, signatureECDSA},
 	{hashSHA1, signatureRSA},
 	{hashSHA1, signatureECDSA},
+
 }
 
 // ClientAuthType declares the policy the server will follow for
@@ -223,6 +228,7 @@ const (
 	ECDSAWithP256AndSHA256 SignatureScheme = 0x0403
 	ECDSAWithP384AndSHA384 SignatureScheme = 0x0503
 	ECDSAWithP521AndSHA512 SignatureScheme = 0x0603
+	ECDSAWithP256SM2AndSM3 SignatureScheme = 0x6403
 )
 
 // ClientHelloInfo contains information from a ClientHello message in order to
@@ -619,6 +625,7 @@ func (c *Config) ticketKeys() []ticketKey {
 	// will only update it by replacing it with a new value.
 	ret := c.sessionTicketKeys
 	c.mutex.RUnlock()
+
 	return ret
 }
 
@@ -822,6 +829,7 @@ func NewLRUClientSessionCache(capacity int) ClientSessionCache {
 		q:        list.New(),
 		capacity: capacity,
 	}
+
 }
 
 // Put adds the provided (sessionKey, cs) pair to the cache.
@@ -915,12 +923,16 @@ func initDefaultCipherSuites() {
 		}
 	*/
 	topCipherSuites = []uint16{
+		GMTLS_SM2DHE_SM2SIGN_WITH_SMS4_CBC_SM3,
+		GMTLS_SM2DHE_SM2SIGN_WITH_SMS4_GCM_SM3,
 		TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 		TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
 		TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 		TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 		TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+
+
 	}
 
 	varDefaultCipherSuites = make([]uint16, 0, len(cipherSuites))
